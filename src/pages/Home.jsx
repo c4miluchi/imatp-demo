@@ -7,8 +7,13 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <h2>Bienvenido {currentUser.username}</h2>
-      <h3>Saldo: ${currentUser.balance}</h3>
+      <div className="container">
+        <div className="card">
+          <h2>Bienvenido, {currentUser.username}</h2>
+          <h3>Dinero disponible</h3>
+          <h1>${currentUser.balance.toLocaleString()}</h1>
+        </div>
+      </div>
     </>
   );
 }

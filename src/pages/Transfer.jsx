@@ -10,14 +10,32 @@ export default function Transfer() {
   return (
     <>
       <Navbar />
-      <h2>Transferir dinero</h2>
-      <select onChange={e => setTo(e.target.value)}>
-        <option>Seleccionar usuario</option>
-        {users.filter(u => u.username !== currentUser.username)
-          .map(u => <option key={u.id}>{u.username}</option>)}
-      </select>
-      <input placeholder="Monto" onChange={e => setAmount(e.target.value)} />
-      <button onClick={() => transfer(to, amount)}>Enviar</button>
+      <div className="container">
+        <div className="card">
+          <h2>Transferir dinero</h2>
+
+          <label>Destinatario</label>
+          <select onChange={e => setTo(e.target.value)}>
+            <option value="">Seleccionar usuario</option>
+            {users
+              .filter(u => u.username !== currentUser.username)
+              .map(u => (
+                <option key={u.id}>{u.username}</option>
+              ))}
+          </select>
+
+          <label>Monto</label>
+          <input
+            type="number"
+            placeholder="Ej: 5000"
+            onChange={e => setAmount(e.target.value)}
+          />
+
+          <button onClick={() => transfer(to, amount)}>
+            Enviar dinero
+          </button>
+        </div>
+      </div>
     </>
   );
 }
