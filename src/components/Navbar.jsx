@@ -1,30 +1,42 @@
 import { Link } from "react-router-dom";
 import { useBank } from "../context/BankContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Navbar() {
-  const { logout, currentUser } = useBank();
+  const { logout, currentUser, unread } = useBank();
+  const { toggleTheme } = useTheme();
 
   return (
     <div style={{
-      background: "#1e3a8a",
+      background: "var(--primary)",
       padding: "14px 20px",
       color: "white",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center"
     }}>
-      <div>
-        <b>Banco Colapinto</b>
-      </div>
+      <b>Banco Colapinto</b>
 
-      <div style={{ display: "flex", gap: "14px" }}>
+      <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
         <Link style={{ color: "white" }} to="/">Inicio</Link>
-        <Link style={{ color: "white" }} to="/chat">Chat</Link>
+
+        <div className="chat-link">
+          <Link style={{ color: "white" }} to="/chat">
+            Chat
+          </Link>
+          {unread && <span className="badge" />}
+        </div>
+
         <Link style={{ color: "white" }} to="/transfer">Transferir</Link>
         <Link style={{ color: "white" }} to="/movements">Movimientos</Link>
-        <span>|</span>
+
+        <button className="btn" onClick={toggleTheme}>
+          🌙 / ☀️
+        </button>
+
         <span>{currentUser.username}</span>
-        <button onClick={logout} style={{ background: "#dc2626" }}>
+
+        <button className="btn btn-danger" onClick={logout}>
           Salir
         </button>
       </div>
