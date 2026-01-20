@@ -15,14 +15,17 @@ export default function Transfer() {
           <h2>Transferir dinero</h2>
 
           <label>Destinatario</label>
-          <select onChange={e => setTo(e.target.value)}>
+          <select value={to} onChange={e => setTo(e.target.value)}>
             <option value="">Seleccionar usuario</option>
             {users
               .filter(u => u.username !== currentUser.username)
               .map(u => (
-                <option key={u.id}>{u.username}</option>
+                <option key={u.id} value={u.username}>
+                  {u.username}
+                </option>
               ))}
           </select>
+
 
           <label>Monto</label>
           <input

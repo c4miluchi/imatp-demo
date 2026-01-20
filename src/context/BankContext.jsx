@@ -62,38 +62,54 @@ export function BankProvider({ children }) {
 
   // 💸 TRANSFERENCIA
   const transfer = (toUsername, amount) => {
-    amount = Number(amount);
-    if (amount <= 0 || currentUser.balance < amount) return;
+  amount = Number(amount);
 
-    const updatedUsers = users.map(u => {
-      if (u.username === currentUser.username) {
-        return {
-          ...u,
-          balance: u.balance - amount,
-          movements: [
-            ...u.movements,
-            { text: `Transferencia a ${toUsername}`, amount: -amount }
-          ]
-        };
-      }
+  if (!toUsername) {
+    alert("Seleccioná un usuario destino");
+    return;
+  }
 
-      if (u.username === toUsername) {
-        return {
-          ...u,
-          balance: u.balance + amount,
-          movements: [
-            ...u.movements,
-            { text: `Transferencia de ${currentUser.username}`, amount }
-          ]
-        };
-      }
+  if (amount <= 0) return;
 
-      return u;
-    });
+  if (currentUser.balance < amount) {
+    alert("Saldo insuficiente");
+    return;
+  }
 
-    setUsers(updatedUsers);
-    setCurrentUser(updatedUsers.find(u => u.username === currentUser.username));
-  };
+  const updatedUsers = users.map(u => {
+    if (u.username === currentUser.username) {
+      return {
+        ...u,
+        balance: u.balance - amount,
+        movements: [
+          ...u.movements,
+          { text: `Transferencia a ${toUsername}`, amount: -amount }
+        ]
+      };
+    }
+
+    if (u.username === toUsername) {
+      return {
+        ...u,
+        balance: u.balance + amount,
+        movements: [
+          ...u.movements,
+          { text: `Transferencia de ${currentUser.username}`, amount }
+        ]
+      };
+    }
+
+    return u;
+  });
+
+  setUsers(updatedUsers);
+
+  // 🔄 sincronizar usuario logueado
+  setCurrentUser(
+    updatedUsers.find(u => u.username === currentUser.username)
+  );
+};
+
 
   // 💬 MENSAJE
   const sendMessage = (to, text) => {
