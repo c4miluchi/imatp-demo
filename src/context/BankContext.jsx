@@ -11,16 +11,14 @@ export function BankProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [unread, setUnread] = useState(false);
 
+  // 🔄 Load storage
   useEffect(() => {
-    const storedUsers = JSON.parse(localStorage.getItem(USERS_KEY)) || [];
-    const storedCurrent = JSON.parse(localStorage.getItem(CURRENT_KEY));
-    const storedUnread = JSON.parse(localStorage.getItem(UNREAD_KEY)) || false;
-
-    setUsers(storedUsers);
-    setCurrentUser(storedCurrent);
-    setUnread(storedUnread);
+    setUsers(JSON.parse(localStorage.getItem(USERS_KEY)) || []);
+    setCurrentUser(JSON.parse(localStorage.getItem(CURRENT_KEY)));
+    setUnread(JSON.parse(localStorage.getItem(UNREAD_KEY)) || false);
   }, []);
 
+  // 💾 Persist
   useEffect(() => {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
   }, [users]);
@@ -33,6 +31,7 @@ export function BankProvider({ children }) {
     localStorage.setItem(UNREAD_KEY, JSON.stringify(unread));
   }, [unread]);
 
+  // 👤 AUTH
   const register = (username, password) => {
     if (users.find(u => u.username === username)) return false;
 
@@ -61,95 +60,139 @@ export function BankProvider({ children }) {
 
   const logout = () => setCurrentUser(null);
 
+  // 💸 TRANSFERENCIA
   const transfer = (toUsername, amount) => {
     amount = Number(amount);
-    if (amount <= 0) return;
+    if (amount <= 0 || currentUser.balance < amount) return;
 
-    setUsers(users.map(u => {
+    const updatedUsers = users.map(u => {
       if (u.username === currentUser.username) {
-        u.balance -= amount;
-        u.movements.push({
-          text: `Transferencia a ${toUsername}`,
-          amount: -amount
-        });
+        return {
+          ...u,
+          balance: u.balance - amount,
+          movements: [
+            ...u.movements,
+            { text: `Transferencia a ${toUsername}`, amount: -amount }
+          ]
+        };
       }
+
       if (u.username === toUsername) {
-        u.balance += amount;
-        u.movements.push({
-          text: `Transferencia de ${currentUser.username}`,
-          amount
-        });
+        return {
+          ...u,
+          balance: u.balance + amount,
+          movements: [
+            ...u.movements,
+            { text: `Transferencia de ${currentUser.username}`, amount }
+          ]
+        };
       }
-      return u;
-    }));
 
-    setCurrentUser({
-      ...currentUser,
-      balance: currentUser.balance - amount
+      return u;
     });
+
+    setUsers(updatedUsers);
+    setCurrentUser(updatedUsers.find(u => u.username === currentUser.username));
   };
 
+  // 💬 MENSAJE
   const sendMessage = (to, text) => {
-    setUsers(users.map(u => {
+    const updatedUsers = users.map(u => {
       if (u.username === to || u.username === currentUser.username) {
-        u.messages.push({
-          type: "text",
-          from: currentUser.username,
-          to,
-          text,
-          time: new Date().toLocaleTimeString()
-        });
+        return {
+          ...u,
+          messages: [
+            ...u.messages,
+            {
+              type: "text",
+              from: currentUser.username,
+              to,
+              text,
+              time: new Date().toLocaleTimeString()
+            }
+          ]
+        };
       }
       return u;
-    }));
+    });
 
+    setUsers(updatedUsers);
     setUnread(true);
   };
 
+  // 💰 SOLICITUD DE DINERO
   const requestMoney = (to, amount, reason) => {
-    setUsers(users.map(u => {
+    const updatedUsers = users.map(u => {
       if (u.username === to || u.username === currentUser.username) {
-        u.messages.push({
-          type: "request",
-          from: currentUser.username,
-          to,
-          amount: Number(amount),
-          reason,
-          status: "pending",
-          time: new Date().toLocaleTimeString()
-        });
+        return {
+          ...u,
+          messages: [
+            ...u.messages,
+            {
+              type: "request",
+              from: currentUser.username,
+              to,
+              amount: Number(amount),
+              reason,
+              status: "pending",
+              time: new Date().toLocaleTimeString()
+            }
+          ]
+        };
       }
       return u;
-    }));
+    });
 
+    setUsers(updatedUsers);
     setUnread(true);
   };
 
+  // ✅ RESPONDER SOLICITUD
   const respondRequest = (index, accepted) => {
-    setUsers(users.map(u => {
+    const updatedUsers = users.map(u => {
+      // receptor
       if (u.username === currentUser.username) {
         const msg = u.messages[index];
         if (!msg || msg.type !== "request" || msg.status !== "pending") return u;
 
-        msg.status = accepted ? "accepted" : "rejected";
+        const updatedMsg = {
+          ...msg,
+          status: accepted ? "accepted" : "rejected"
+        };
+
+        let newUser = {
+          ...u,
+          messages: u.messages.map((m, i) => (i === index ? updatedMsg : m))
+        };
 
         if (accepted) {
-          u.balance -= msg.amount;
-          u.movements.push({
-            text: `Transferencia a ${msg.from}`,
-            amount: -msg.amount
-          });
-
-          const sender = users.find(us => us.username === msg.from);
-          sender.balance += msg.amount;
-          sender.movements.push({
-            text: `Transferencia de ${currentUser.username}`,
-            amount: msg.amount
-          });
+          newUser.balance -= msg.amount;
+          newUser.movements = [
+            ...newUser.movements,
+            { text: `Transferencia a ${msg.from}`, amount: -msg.amount }
+          ];
         }
+
+        return newUser;
       }
+
+      // emisor
+      if (accepted && u.username === users.find(us => us.messages[index]?.from)?.messages[index]?.from) {
+        return {
+          ...u,
+          balance: u.balance + users.find(us => us.messages[index])?.messages[index]?.amount,
+          movements: [
+            ...u.movements,
+            { text: `Transferencia de ${currentUser.username}`, amount: users.find(us => us.messages[index])?.messages[index]?.amount }
+          ]
+        };
+      }
+
       return u;
-    }));
+    });
+
+    setUsers(updatedUsers);
+    setCurrentUser(updatedUsers.find(u => u.username === currentUser.username));
   };
 
   const clearUnread = () => setUnread(false);
